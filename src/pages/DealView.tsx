@@ -3,6 +3,7 @@ import type { Ctx } from '../App';
 import { dt, errText, money, sb, type DealEvent, type Payment } from '../lib/data';
 import { CATEGORIES, nextStage, ROLES, slaFor, stageById, stageIndex, STAGES, type StageId } from '../lib/stages';
 import { addWorkHours, formatLeft } from '../lib/workhours';
+import { moveDeal } from '../lib/actions';
 import { Dot, dealLight } from './parts';
 
 export default function DealView({ id, me, team, deals, reload }: Ctx & { id: number }) {
@@ -45,13 +46,7 @@ export default function DealView({ id, me, team, deals, reload }: Ctx & { id: nu
   };
 
   const move = (to: StageId, kind: 'stage' | 'return', text?: string) =>
-    act(async () => {
-      const patch: Record<string, unknown> = { stage: to };
-      if (to === 'done') patch.status = 'done';
-      const { error } = await sb.from('deals').update(patch).eq('id', d.id);
-      if (error) return { error };
-      return sb.from('deal_events').insert({ deal_id: d.id, kind, from_stage: d.stage, to_stage: to, text: text || null });
-    });
+    act(() => moveDeal(d, to, kind, text));
 
   const comment = (kind: 'comment' | 'escalation') =>
     note.trim() && act(async () => {
